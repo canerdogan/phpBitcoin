@@ -12,7 +12,6 @@ $callback = function($orderID, $inputAddress, $btc, $confirmations, $inputTxHash
             DB::update("order", ["id" => $orderID], ["status" => "finish"]);
         else
             DB::update("order", ["id" => $orderID], ["status" => "error"]);
-            return true;
     }
 
     return true;
