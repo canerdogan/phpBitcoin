@@ -1,13 +1,29 @@
 <?php
 
+/**
+ * Class Bitcoin
+ */
 class Bitcoin
 {
+    /** @var string */
     private $callbackUrl = "";
+    /** @var string */
     private $secret = "0123456789";
+    /** @var string */
     private $address = "1FjhhWrzAvb9YD4tVdbE6wrSoHSwxMJoWe";
+    /** @var callable */
     private $callback = null;
+    /** @var string */
     private $blockchainPrefix = "https://blockchain.info";
 
+    /**
+     * @param string $callbackUrl
+     * @param string $address
+     * @param string $secret
+     * @param callable $callback
+     *
+     * callback($orderID, $inputAddress, $btc, $confirmations, $inputTxHash, $param)
+     */
     public function __construct($callbackUrl, $address, $secret, callable $callback)
     {
         $this->callbackUrl = $callbackUrl;
@@ -18,9 +34,15 @@ class Bitcoin
             $this->secret = $secret;
     }
 
-    public function genAddress($param = [])
+    /**
+     * @param string $orderID
+     * @param array $param
+     * @return string
+     */
+    public function genAddress($orderID, $param = [])
     {
-        $param["secret"] = $this->secret;
+        $param["_id"] = $orderID;
+        $param["_token"] = md5("{$orderID}{$this->secret}");
 
         $param = $this->dataEncoder($param);
         $callbackUrl = urlencode("{$this->callbackUrl}?{$param}");
@@ -31,19 +53,34 @@ class Bitcoin
         return $result["input_address"];
     }
 
+    /**
+     * @return string
+     */
     public function doCallback()
     {
         $param = $_GET;
-        $value = $param["value"];
-        $input_address = $param["input_address"];
-        $confirmations = $param["confirmations"];
-        $input_transaction_hash = $param["input_transaction_hash"];
+        $token = $param["_token"];
+        $orderID = $param["_id"];
 
-        $result = $this->callback($input_address, $value, $confirmations, $input_transaction_hash, $param);
+        if(md5("{$orderID}{$this->secret}") == $token)
+        {
+            $btc = $param["value"] / 100000000;
+            $inputAddress = $param["input_address"];
+            $confirmations = $param["confirmations"];
+            $inputTxHash = $param["input_transaction_hash"];
 
-        return $result ? "*OK*" : "";
+            $result = $this->callback($orderID, $inputAddress, $btc, $confirmations, $inputTxHash, $param);
+
+            return $result ? "*OK*" : "";
+        }
+
+        return "Bad Token";
     }
 
+    /**
+     * @param array $data
+     * @return string
+     */
     private function dataEncoder(array $data)
     {
         $result = "";
