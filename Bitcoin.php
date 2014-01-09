@@ -28,9 +28,9 @@ class Bitcoin
     {
         $this->callbackUrl = $callbackUrl;
         $this->callback = $callback;
-        if(!$address)
+        if($address)
             $this->address = $address;
-        if(!$secret)
+        if($secret)
             $this->secret = $secret;
     }
 
